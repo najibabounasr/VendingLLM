@@ -1,3 +1,3 @@
 model,mse,params
-XGBoost,0.0029650020552008664,"{'max_depth': 9, 'learning_rate': 0.03258042815693765, 'n_estimators': 260, 'subsample': 0.6803569570212946, 'colsample_bytree': 0.7297488638677756, 'reg_lambda': 0.0042678063108704785, 'reg_alpha': 0.002071630693559971}"
-LightGBM,0.0030097094610456875,"{'num_leaves': 168, 'learning_rate': 0.05628841190975238, 'n_estimators': 198, 'bagging_fraction': 0.7209744711969754, 'feature_fraction': 0.8756722356372848, 'boosting_type': 'gbdt', 'min_child_samples': 14}"
+XGBoost,72.00851136730135,"{'max_depth': 3, 'learning_rate': 0.0329317442701138, 'n_estimators': 90, 'subsample': 0.8490696974941134, 'colsample_bytree': 0.6701252582589959, 'reg_lambda': 0.004187144986153243, 'reg_alpha': 6.742986478915485}"
+LightGBM,70.571615236149,"{'num_leaves': 207, 'learning_rate': 0.012998687035928555, 'n_estimators': 225, 'bagging_fraction': 0.6621413672076609, 'feature_fraction': 0.8841567887961861, 'boosting_type': 'gbdt', 'min_child_samples': 39}"
