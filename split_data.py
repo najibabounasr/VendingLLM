@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
+import scipy
 from typing import List, Optional
+import os
 
 #  this should work with all dataframes. 
 def prepare_features_and_target_v1(
@@ -77,6 +79,28 @@ def prepare_features_and_target_v1(
         preprocessor = ColumnTransformer(transformers=[], remainder="drop")
     else:
         preprocessor = ColumnTransformer(transformers=transformers, remainder="drop")
+
+
+    # remove ALL NAN:
+
+    num = X_train.select_dtypes(np.number).columns
+    X_train[num] = X_train[num].interpolate(method="spline", order=3, limit_direction="both")
+    X_test[num]  = X_test[num].interpolate(method="spline", order=3, limit_direction="both")
+    y_train = y_train.interpolate(method="spline", order=3, limit_direction="both")
+    y_test  = y_test.interpolate(method="spline", order=3, limit_direction="both")
+
+    # ensure a per-target output dir
+    outdir = os.path.join("data", target_col)
+    os.makedirs(outdir, exist_ok=True)
+
+    # save with a consistent date index name
+    X_train.to_csv(os.path.join(outdir, "X_train.csv"), index=True, index_label=date_col)
+    X_test.to_csv(os.path.join(outdir, "X_test.csv"), index=True, index_label=date_col)
+
+    # y as 1-col CSVs; preserve same index label
+    y_train.to_frame(name=target_col).to_csv(os.path.join(outdir, "y_train.csv"), index=True, index_label=date_col)
+    y_test.to_frame(name=target_col).to_csv(os.path.join(outdir, "y_test.csv"), index=True, index_label=date_col)
+
 
     return X_train, X_test, y_train, y_test, preprocessor
 
