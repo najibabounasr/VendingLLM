@@ -1,0 +1,3 @@
+model,mse,params
+XGBoost,0.00010254378377071301,"{'max_depth': 9, 'learning_rate': 0.07491743897876103, 'n_estimators': 200, 'subsample': 0.7191599378806164, 'colsample_bytree': 0.9242434261143668, 'reg_lambda': 0.05923964780445562, 'reg_alpha': 0.01331051246557281}"
+LightGBM,0.004571905114816722,"{'num_leaves': 42, 'learning_rate': 0.08195978972616767, 'n_estimators': 216, 'bagging_fraction': 0.5227006085482075, 'feature_fraction': 0.9490016048347245, 'boosting_type': 'gbdt', 'min_child_samples': 36}"
