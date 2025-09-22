@@ -255,8 +255,8 @@ def main(targets):
         print("Optimizing XGBoost...")
         optimize_model(lambda trial: objective_xgb(trial, X_train, y_train, X_test, y_test, target), "XGBoost")
 
-        print("Optimizing CatBoost...")
-        optimize_model(lambda trial: objective_catboost(trial, X_train, y_train, X_test, y_test, target), "CatBoost")
+        # print("Optimizing CatBoost...")
+        # optimize_model(lambda trial: objective_catboost(trial, X_train, y_train, X_test, y_test, target), "CatBoost")
 
 
 

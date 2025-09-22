@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Transcribe Demo</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; }
+      pre#log { background:#111; color:#eee; padding:12px; border-radius:6px; max-height:40vh; overflow:auto; }
+      button { margin-right:8px; }
+    </style>
+  </head>
+  <body>
+    <h1>Speak / Stop / Hear</h1>
+
+    <audio id="player" controls></audio><br/>
+    <button id="speak">Speak</button>
+    <button id="stop" disabled>Stop</button>
+    <button id="hear" disabled>Hear</button>
+
+    <h3>Messages</h3>
+    <pre id="log"></pre>
+
+    <script>
+      // Connect to YOUR Node server (not OpenAI)
+      const ws = new WebSocket(`ws://${location.host}`);
+      const logEl = document.getElementById("log");
+      const speakBtn = document.getElementById("speak");
+      const stopBtn  = document.getElementById("stop");
+      const hearBtn  = document.getElementById("hear");
+      const player   = document.getElementById("player");
+
+      const log = (t) => { logEl.textContent += (logEl.textContent? "\n":"") + t; logEl.scrollTop = logEl.scrollHeight; };
+
+      // Show all JSON messages from server/OpenAI
+      ws.onmessage = (e) => {
+        try { log(e.data); } catch { log(String(e.data)); }
+      };
+
+      let running = false, audioCtx, mic, proc, chunksB64 = [];
+
+      speakBtn.onclick = async () => {
+        if (running) return;
+        running = true;
+        speakBtn.disabled = true; stopBtn.disabled = false; hearBtn.disabled = true;
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        mic = audioCtx.createMediaStreamSource(stream);
+        proc = audioCtx.createScriptProcessor(2048, 1, 1);
+
+        proc.onaudioprocess = (e) => {
+          if (!running || ws.readyState !== WebSocket.OPEN) return;
+          const f32 = e.inputBuffer.getChannelData(0);
+          const pcm = new Int16Array(f32.length);
+          for (let i=0;i<f32.length;i++){ let s=f32[i]; s = Math.max(-1, Math.min(1, s)); pcm[i]= s<0 ? s*0x8000 : s*0x7FFF; }
+          const b64 = btoa(String.fromCharCode(...new Uint8Array(pcm.buffer)));
+          ws.send(JSON.stringify({ type: "append", audio: b64 }));   // send to Node → OpenAI
+          chunksB64.push(b64);                                       // keep for Hear
+        };
+
+        mic.connect(proc);
+        proc.connect(audioCtx.destination); // required in some browsers
+      };
+
+      stopBtn.onclick = async () => {
+        if (!running) return;
+        running = false;
+        speakBtn.disabled = false; stopBtn.disabled = true; hearBtn.disabled = false;
+
+        try { proc.disconnect(); proc.onaudioprocess = null; } catch {}
+        try { mic.disconnect(); } catch {}
+        try { await audioCtx.close(); } catch {}
+
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "commit" })); // finalize for transcription
+        }
+
+        // Build a WAV from what you spoke so Hear can play it
+        if (chunksB64.length) {
+          const pcmBytes = chunksB64.map(b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
+          const total = pcmBytes.reduce((a,b)=>a+b.length,0);
+          const pcm = new Uint8Array(total);
+          let off=0; for (const u of pcmBytes){ pcm.set(u,off); off+=u.length; }
+          const wav = pcm16ToWav(pcm, 16000);
+          const url = URL.createObjectURL(new Blob([wav], { type: "audio/wav" }));
+          player.src = url;
+        }
+        chunksB64 = [];
+      };
+
+      hearBtn.onclick = () => { if (player.src) player.play(); };
+
+      function pcm16ToWav(pcmU8, sampleRate) {
+        const header = new ArrayBuffer(44);
+        const v = new DataView(header);
+        const write = (o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+        write(0,"RIFF"); v.setUint32(4, 36 + pcmU8.length, true);
+        write(8,"WAVE"); write(12,"fmt "); v.setUint32(16,16,true);
+        v.setUint16(20,1,true); v.setUint16(22,1,true);
+        v.setUint32(24,sampleRate,true); v.setUint32(28,sampleRate*2,true);
+        v.setUint16(32,2,true); v.setUint16(34,16,true);
+        write(36,"data"); v.setUint32(40, pcmU8.length, true);
+        return new Blob([header, pcmU8]);
+      }
+    </script>
+  </body>
+</html>
