@@ -20,7 +20,7 @@ const url = "wss://api.openai.com/v1/realtime?intent=transcription"
 const ws = new WebSocket(
   url, {
     headers: {
-      Authorization: "Bearer " + "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",
+      Authorization: "Bearer " + process.env.OPENAI_API_KEY,
     }
   }
 )

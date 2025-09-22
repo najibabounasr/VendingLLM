@@ -31,7 +31,7 @@ wss.on("connection", async (ws) => {
   });
 
   const session = new RealtimeSession(agent);
-  await session.connect({ apiKey: "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" });
+  await session.connect({ apiKey: process.env.OPENAI_API_KEY });
 
   // Immediately ask the model so you see something even without audio
     await session.sendText?.("Say 'ping' if you can hear me.");
